@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="en" class="h-full bg-[#121016]">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OmniForge 1.1 - AI Image Generator</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Fonts Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet">
+  <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            pink: '#f43f5e',
+                            purple: '#8b5cf6',
+                            blue: '#3b82f6',
+                            dark: '#141217',
+                            card: '#1e1a24',
+                            panel: '#616068',
+                        }
+                    },
+                    animation: {
+                        'pulse-glow': 'pulseGlow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'float': 'float 4s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        pulseGlow: {
+                            '0%, 100%': { opacity: '0.6', transform: 'scale(1)' },
+                            '50%': { opacity: '0.9', transform: 'scale(1.02)' },
+                        },
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0px)' },
+                            '50%': { transform: 'translateY(-6px)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+  <!-- Custom Inline Styles for Precision Visual Matching -->
+  <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(180deg, #28212d 0%, #17141d 50%, #0d0b11 100%);
+            min-height: 100vh;
+            color: #ffffff;
+            user-select: none;
+        }
+
+        /* Ambient subtle radial spotlight in preview area */
+        .spotlight-bg {
+            background: radial-gradient(circle at 50% 40%, rgba(255, 255, 255, 0.05) 0%, rgba(0, 0, 0, 0.6) 80%);
+        }
+
+        /* Text gradient matching OmniForge title */
+        .omniforge-title-gradient {
+            background: linear-gradient(90deg, #ff2a8d 0%, #d946ef 35%, #2563eb 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Glossy Blue Arrow Button styling matching reference UI */
+        .blue-submit-btn {
+            background: linear-gradient(180deg, #8cb3e8 0%, #578bd6 40%, #2f65b8 100%);
+            box-shadow: 0px 4px 12px rgba(47, 101, 184, 0.4), inset 0px 1px 1px rgba(255, 255, 255, 0.6);
+            transition: all 0.2s ease;
+        }
+        .blue-submit-btn:hover {
+            filter: brightness(1.1);
+            transform: translateY(-1px);
+            box-shadow: 0px 6px 16px rgba(47, 101, 184, 0.6), inset 0px 1px 1px rgba(255, 255, 255, 0.8);
+        }
+        .blue-submit-btn:active {
+            transform: translateY(1px);
+            filter: brightness(0.95);
+        }
+
+        /* Input Container styling matching exact grey card */
+        .prompt-card {
+            background-color: #6d6b73;
+            box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(12px);
+            border-top-left-radius: 28px;
+            border-top-right-radius: 28px;
+        }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.4);
+        }
+    </style>
+ </head>
+ <body class="flex flex-col h-screen overflow-hidden">
+  <!-- Header Navigation -->
+  <header class="w-full px-6 py-5 flex items-center justify-between z-20 max-w-xl mx-auto">
+   <div class="flex items-center gap-2 cursor-pointer" onclick="resetToHome()">
+    <h1 class="text-3xl font-black tracking-tight omniforge-title-gradient drop-shadow-sm">OmniForge <span class="font-bold text-2xl text-blue-500">1.1</span></h1>
+   </div>
+   <button onclick="toggleGalleryModal(true)" class="text-white/90 hover:text-white font-medium text-lg flex items-center gap-2 hover:translate-x-1 transition-all duration-200"><span>Gallery</span> <i class="fa-solid fa-arrow-right text-sm"></i></button>
+  </header>
+  <!-- Main Content Area -->
+  <main class="flex-1 flex flex-col items-center justify-between px-4 pb-2 max-w-xl mx-auto w-full overflow-y-auto">
+   <!-- Image Container Box -->
+   <div class="w-full flex-1 flex flex-col items-center justify-center min-h-[300px] my-2 relative">
+    <div id="imageDisplayContainer" class="w-full aspect-square max-w-[420px] bg-black/90 rounded-2xl border border-white/5 shadow-2xl relative overflow-hidden flex items-center justify-center spotlight-bg group transition-all duration-300">
+     <!-- Background subtle arc design from reference photo -->
+     <div class="absolute inset-0 opacity-20 pointer-events-none">
+      <svg class="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+       <path d="M 0 100 C 30 60, 70 60, 100 100 Z" fill="rgba(255,255,255,0.1)"></path>
+      </svg>
+     </div>
+     <!-- Empty State Text (Matches exact prompt photo) -->
+     <div id="placeholderState" class="text-white/80 font-normal text-base md:text-lg text-center px-6 z-10">Created image will be here</div>
+     <!-- Loading State Spinner -->
+     <div id="loadingState" class="hidden flex-col items-center justify-center z-10 gap-4 p-6">
+      <div class="relative w-16 h-16">
+       <div class="absolute inset-0 rounded-full border-4 border-pink-500/20 animate-ping"></div>
+       <div class="absolute inset-0 rounded-full border-4 border-t-pink-500 border-r-purple-500 border-b-blue-500 border-l-transparent animate-spin"></div>
+      </div>
+      <div class="text-center">
+       <p id="loadingStatusText" class="text-white font-medium text-base">Forging your artwork...</p>
+       <p id="loadingSubtext" class="text-white/50 text-xs mt-1">Connecting to Pollinations AI...</p>
+      </div>
+     </div>
+     <!-- Generated Canvas / Image Display -->
+     <div id="imageRenderWrapper" class="hidden w-full h-full relative group/img">
+      <canvas id="outputCanvas" class="w-full h-full object-contain"></canvas>
+      <!-- Quick Action Overlay Buttons -->
+      <div class="absolute top-3 right-3 flex gap-2 opacity-0 group-hover/img:opacity-100 transition-opacity duration-200">
+       <button onclick="openFullscreenModal()" class="w-9 h-9 rounded-full bg-black/60 hover:bg-black/90 backdrop-blur-md text-white flex items-center justify-center border border-white/20 transition-all"><i class="fa-solid fa-expand text-sm"></i></button>
+       <button onclick="downloadCurrentImage()" class="w-9 h-9 rounded-full bg-black/60 hover:bg-black/90 backdrop-blur-md text-white flex items-center justify-center border border-white/20 transition-all"><i class="fa-solid fa-download text-sm"></i></button>
+      </div>
+     </div>
+    </div>
+    <!-- Footer Notice Text (Matches reference screenshot) -->
+    <p class="text-white/70 text-xs md:text-sm text-center mt-3 font-normal px-4">Created images will be watermarked "<span class="font-semibold text-white/90">OmniForge</span>" on the corner</p>
+   </div>
+   <!-- Floating Prompt & Control Bar (Dark Grey Rounded Card) -->
+   <div class="w-full max-w-[420px] prompt-card p-5 pb-6 text-white relative mt-auto">
+    <!-- Textarea Prompt Field -->
+    <div class="relative w-full">
+     <textarea id="promptInput" rows="2" placeholder="Tell me what to generate.." class="w-full bg-transparent text-white placeholder-white/80 font-normal text-base border-none outline-none resize-none leading-snug tracking-wide" onkeydown="handleKeyDown(event)"></textarea>
+    </div>
+    <!-- Bottom Control Row -->
+    <div class="flex items-end justify-between mt-3 pt-1">
+     <!-- Left Option Selector Pill Button -->
+     <button onclick="openSettingsModal()" class="bg-black/20 hover:bg-black/30 border border-white/10 rounded-xl px-3.5 py-2 text-white/90 font-medium text-sm flex items-center gap-2 transition-colors cursor-pointer"><span id="selectedRatioModelLabel">1:1 - Flux</span> <i class="fa-solid fa-chevron-down text-xs text-white/60"></i></button>
+     <!-- Right Blue Glossy Action Button -->
+     <button id="generateBtn" onclick="generateImage()" class="blue-submit-btn w-14 h-14 rounded-2xl flex items-center justify-center text-white text-2xl font-bold cursor-pointer shrink-0" title="Generate Image"><i class="fa-solid fa-arrow-up"></i></button>
+    </div>
+   </div>
+  </main>
+  <!-- Settings / Model & Aspect Ratio Selector Modal -->
+  <div id="settingsModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+   <div class="bg-[#211d27] border border-white/10 rounded-3xl w-full max-w-md p-6 text-white shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+    <div class="flex items-center justify-between pb-4 border-b border-white/10">
+     <h3 class="text-xl font-bold flex items-center gap-2"><i class="fa-solid fa-sliders text-pink-500"></i> Generation Options</h3>
+     <button onclick="closeSettingsModal()" class="text-white/60 hover:text-white text-lg"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="space-y-5 mt-4">
+     <!-- AI Engine / Provider -->
+     <div>
+      <label class="block text-xs uppercase tracking-wider text-white/60 mb-2 font-bold">AI Model Engine</label>
+      <div class="grid grid-cols-2 gap-2" id="modelSelectorGroup">
+       <button onclick="selectModel('flux')" data-model="flux" class="model-opt-btn active p-3 rounded-xl border border-pink-500/50 bg-pink-500/20 text-white text-left font-medium text-sm flex flex-col gap-1 transition-all"><span class="font-bold flex items-center justify-between">Flux <i class="fa-solid fa-circle-check text-pink-400 text-xs"></i></span> <span class="text-xs text-white/60">Pollinations AI High Quality</span></button>
+       <button onclick="selectModel('flux-realism')" data-model="flux-realism" class="model-opt-btn p-3 rounded-xl border border-white/10 bg-black/30 text-white/70 text-left font-medium text-sm flex flex-col gap-1 hover:border-white/30 transition-all"><span class="font-bold flex items-center justify-between">Flux Realism</span> <span class="text-xs text-white/60">Photorealistic style</span></button>
+       <button onclick="selectModel('turbo')" data-model="turbo" class="model-opt-btn p-3 rounded-xl border border-white/10 bg-black/30 text-white/70 text-left font-medium text-sm flex flex-col gap-1 hover:border-white/30 transition-all"><span class="font-bold flex items-center justify-between">Turbo Fast</span> <span class="text-xs text-white/60">Ultra-fast generation</span></button>
+       <button onclick="selectModel('gemini-flash')" data-model="gemini-flash" class="model-opt-btn p-3 rounded-xl border border-white/10 bg-black/30 text-white/70 text-left font-medium text-sm flex flex-col gap-1 hover:border-white/30 transition-all"><span class="font-bold flex items-center justify-between">Gemini Flash</span> <span class="text-xs text-white/60">Google Gemini Engine</span></button>
+      </div>
+     </div>
+     <!-- Aspect Ratio Selector -->
+     <div>
+      <label class="block text-xs uppercase tracking-wider text-white/60 mb-2 font-bold">Aspect Ratio</label>
+      <div class="grid grid-cols-4 gap-2" id="ratioSelectorGroup">
+       <button onclick="selectRatio('1:1', 1024, 1024)" data-ratio="1:1" class="ratio-opt-btn active p-2.5 rounded-xl border border-pink-500/50 bg-pink-500/20 text-white text-center font-bold text-sm transition-all">1:1</button>
+       <button onclick="selectRatio('16:9', 1280, 720)" data-ratio="16:9" class="ratio-opt-btn p-2.5 rounded-xl border border-white/10 bg-black/30 text-white/70 hover:border-white/30 text-center font-bold text-sm transition-all">16:9</button>
+       <button onclick="selectRatio('9:16', 720, 1280)" data-ratio="9:16" class="ratio-opt-btn p-2.5 rounded-xl border border-white/10 bg-black/30 text-white/70 hover:border-white/30 text-center font-bold text-sm transition-all">9:16</button>
+       <button onclick="selectRatio('4:3', 1024, 768)" data-ratio="4:3" class="ratio-opt-btn p-2.5 rounded-xl border border-white/10 bg-black/30 text-white/70 hover:border-white/30 text-center font-bold text-sm transition-all">4:3</button>
+      </div>
+     </div>
+     <!-- Watermark Settings -->
+     <div class="pt-2 border-t border-white/10 flex items-center justify-between">
+      <div>
+       <p class="font-medium text-sm">Add Watermark</p>
+       <p class="text-xs text-white/50">Stamp "OmniForge" on created artwork</p>
+      </div>
+      <label class="relative inline-flex items-center cursor-pointer"> <input type="checkbox" id="watermarkToggle" checked class="sr-only peer" onchange="toggleWatermarkSetting(this.checked)"> 
+       <div class="w-11 h-6 bg-black/50 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-pink-600"></div> </label>
+     </div>
+    </div>
+    <button onclick="closeSettingsModal()" class="w-full mt-6 bg-gradient-to-r from-pink-500 to-purple-600 py-3 rounded-xl font-bold text-white shadow-lg hover:opacity-90 transition-opacity">Apply &amp; Save Settings</button>
+   </div>
+  </div>
+  <!-- Gallery Full Screen Drawer / Modal -->
+  <div id="galleryModal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 hidden flex flex-col p-6 overflow-hidden">
+   <div class="max-w-4xl w-full mx-auto flex items-center justify-between pb-6 border-b border-white/10">
+    <div>
+     <h2 class="text-2xl font-black omniforge-title-gradient">OmniForge Gallery</h2>
+     <p class="text-xs text-white/50">Your created AI images stored locally</p>
+    </div>
+    <div class="flex items-center gap-3">
+     <button onclick="clearGallery()" class="text-xs text-red-400 hover:text-red-300 bg-red-500/10 hover:bg-red-500/20 px-3 py-1.5 rounded-lg transition-colors">Clear History</button>
+     <button onclick="toggleGalleryModal(false)" class="text-white/70 hover:text-white text-2xl"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+   </div>
+   <!-- Gallery Grid -->
+   <div id="galleryGrid" class="max-w-4xl w-full mx-auto flex-1 overflow-y-auto my-6 grid grid-cols-2 md:grid-cols-3 gap-4 pr-2">
+    <!-- Dynamic Gallery Cards loaded via JS -->
+   </div>
+  </div>
+  <!-- Fullscreen Image Viewer Modal -->
+  <div id="fullscreenModal" class="fixed inset-0 bg-black/95 z-50 hidden flex flex-col items-center justify-center p-4">
+   <button onclick="closeFullscreenModal()" class="absolute top-6 right-6 text-white/70 hover:text-white text-3xl z-10"><i class="fa-solid fa-xmark"></i></button>
+   <div class="max-w-4xl max-h-[85vh] w-full flex items-center justify-center relative">
+    <img id="fullscreenImg" src="" alt="Full Preview" class="max-w-full max-h-[85vh] object-contain rounded-xl shadow-2xl">
+   </div>
+   <div class="mt-4 flex gap-4">
+    <button onclick="downloadCurrentImage()" class="bg-white/10 hover:bg-white/20 text-white px-5 py-2.5 rounded-xl font-medium flex items-center gap-2 border border-white/20 transition-all"><i class="fa-solid fa-download"></i> Download High Quality</button>
+   </div>
+  </div>
+  <script>
+        // --- State Management ---
+        const state = {
+            prompt: '',
+            selectedModel: 'flux', // 'flux', 'flux-realism', 'turbo', 'gemini-flash'
+            selectedRatio: '1:1',
+            width: 1024,
+            height: 1024,
+            watermarkEnabled: true,
+            isGenerating: false,
+            currentImageDataUrl: null,
+            currentPrompt: '',
+            gallery: JSON.parse(localStorage.getItem('omniforge_gallery') || '[]')
+        };
+
+        // --- Initial Load ---
+        window.addEventListener('DOMContentLoaded', () => {
+            updateRatioModelLabel();
+            renderGallery();
+        });
+
+        // Keydown handling for prompt input (Enter generates, Shift+Enter new line)
+        function handleKeyDown(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                generateImage();
+            }
+        }
+
+        function resetToHome() {
+            document.getElementById('placeholderState').classList.remove('hidden');
+            document.getElementById('imageRenderWrapper').classList.add('hidden');
+            document.getElementById('loadingState').classList.add('hidden');
+            document.getElementById('promptInput').value = '';
+            state.currentImageDataUrl = null;
+        }
+
+        // --- Model & Aspect Ratio Selection ---
+        function selectModel(modelKey) {
+            state.selectedModel = modelKey;
+            document.querySelectorAll('.model-opt-btn').forEach(btn => {
+                if (btn.getAttribute('data-model') === modelKey) {
+                    btn.classList.add('active', 'border-pink-500/50', 'bg-pink-500/20', 'text-white');
+                    btn.classList.remove('border-white/10', 'bg-black/30', 'text-white/70');
+                    if (!btn.querySelector('.fa-circle-check')) {
+                        const icon = document.createElement('i');
+                        icon.className = 'fa-solid fa-circle-check text-pink-400 text-xs ml-auto';
+                        btn.querySelector('.font-bold').appendChild(icon);
+                    }
+                } else {
+                    btn.classList.remove('active', 'border-pink-500/50', 'bg-pink-500/20', 'text-white');
+                    btn.classList.add('border-white/10', 'bg-black/30', 'text-white/70');
+                    const icon = btn.querySelector('.fa-circle-check');
+                    if (icon) icon.remove();
+                }
+            });
+            updateRatioModelLabel();
+        }
+
+        function selectRatio(ratioStr, width, height) {
+            state.selectedRatio = ratioStr;
+            state.width = width;
+            state.height = height;
+
+            document.querySelectorAll('.ratio-opt-btn').forEach(btn => {
+                if (btn.getAttribute('data-ratio') === ratioStr) {
+                    btn.classList.add('active', 'border-pink-500/50', 'bg-pink-500/20', 'text-white');
+                    btn.classList.remove('border-white/10', 'bg-black/30', 'text-white/70');
+                } else {
+                    btn.classList.remove('active', 'border-pink-500/50', 'bg-pink-500/20', 'text-white');
+                    btn.classList.add('border-white/10', 'bg-black/30', 'text-white/70');
+                }
+            });
+            updateRatioModelLabel();
+        }
+
+        function updateRatioModelLabel() {
+            let modelName = 'Flux';
+            if (state.selectedModel === 'flux-realism') modelName = 'Realism';
+            if (state.selectedModel === 'turbo') modelName = 'Turbo';
+            if (state.selectedModel === 'gemini-flash') modelName = 'Gemini';
+
+            document.getElementById('selectedRatioModelLabel').innerText = `${state.selectedRatio} - ${modelName}`;
+        }
+
+        functio
